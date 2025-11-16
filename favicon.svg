@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Suitcase Body -->
+  <rect x="4" y="10" width="24" height="18" rx="2" fill="#E95420" stroke="#000" stroke-width="0.5"/>
+  
+  <!-- Suitcase Handle -->
+  <rect x="12" y="6" width="8" height="6" rx="1" fill="none" stroke="#000" stroke-width="1.5"/>
+  <rect x="13" y="7" width="6" height="4" rx="0.5" fill="#E95420"/>
+  
+  <!-- Suitcase Clasp -->
+  <rect x="14" y="14" width="4" height="6" rx="0.5" fill="#fff" stroke="#000" stroke-width="0.5"/>
+  <circle cx="16" cy="17" r="0.8" fill="#000"/>
+  
+  <!-- Suitcase Details -->
+  <line x1="8" y1="22" x2="8" y2="24" stroke="#000" stroke-width="0.8" stroke-linecap="round"/>
+  <line x1="24" y1="22" x2="24" y2="24" stroke="#000" stroke-width="0.8" stroke-linecap="round"/>
+  
+  <!-- Subtle gradient overlay for depth -->
+  <defs>
+    <linearGradient id="suitcase-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E95420;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#C4451A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Apply gradient to main body -->
+  <rect x="4" y="10" width="24" height="18" rx="2" fill="url(#suitcase-gradient)" opacity="0.3"/>
+</svg>

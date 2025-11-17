@@ -32,7 +32,6 @@ const AboutApp: React.FC = () => {
             <p className="whitespace-pre-wrap text-sm leading-relaxed">{bio}</p>
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -57,7 +57,7 @@ const SkillsApp: React.FC = () => (
             <div className="mb-4 flex flex-wrap gap-2">
               {technicalSkills.map((skill) => (
                 <span
-                  className="rounded-full bg-primary/10 px-3 py-1 text-primary text-sm"
+                  className="rounded-full bg-primary/10 px-3 py-1 font-mono text-primary text-sm"
                   key={skill}
                 >
                   {skill}
@@ -70,7 +70,7 @@ const SkillsApp: React.FC = () => (
             <div className="mb-4 flex flex-wrap gap-2">
               {personalSkills.map((skill) => (
                 <span
-                  className="rounded-full bg-primary/10 px-3 py-1 text-primary text-sm"
+                  className="rounded-full bg-primary/10 px-3 py-1 font-mono text-primary text-sm"
                   key={skill}
                 >
                   {skill}
@@ -81,7 +81,7 @@ const SkillsApp: React.FC = () => (
             <div className="flex flex-wrap gap-2">
               {languages.map((lang) => (
                 <span
-                  className="rounded-full bg-secondary px-3 py-1 text-secondary-foreground text-sm"
+                  className="rounded-full bg-secondary px-3 py-1 font-mono text-secondary-foreground text-sm"
                   key={lang}
                 >
                   {lang}

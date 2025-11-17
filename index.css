@@ -1,0 +1,115 @@
+@import url("https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import "tailwindcss";
+
+/* Theme Configuration */
+:root {
+  /* Ubuntu Theme - Orange/Gray palette */
+  --background: oklch(0.151 0.015 250.5); /* Ubuntu dark background */
+  --foreground: oklch(0.985 0.002 247.839); /* white */
+  --card: oklch(0.215 0.017 252.1); /* Ubuntu card background */
+  --card-foreground: oklch(0.985 0.002 247.839); /* white */
+  --popover: oklch(0.215 0.017 252.1); /* Ubuntu card background */
+  --popover-foreground: oklch(0.985 0.002 247.839); /* white */
+
+  --primary: oklch(0.647 0.165 29.23); /* Ubuntu orange #E95420 */
+  --primary-foreground: oklch(0.985 0.002 247.839); /* white */
+  --secondary: oklch(0.285 0.016 251.8); /* Ubuntu secondary */
+  --secondary-foreground: oklch(0.985 0.002 247.839); /* white */
+
+  --muted: oklch(0.285 0.016 251.8); /* Ubuntu secondary */
+  --muted-foreground: oklch(0.57 0.028 250.8); /* Ubuntu muted text */
+  --accent: oklch(0.698 0.083 28.5); /* Ubuntu light orange */
+  --accent-foreground: oklch(0.985 0.002 247.839); /* white */
+
+  --destructive: oklch(0.636 0.208 25.331); /* red-500 */
+  --destructive-foreground: oklch(0.985 0.002 247.839); /* white */
+
+  --border: oklch(0.33 0.018 251.3); /* Ubuntu border */
+  --input: oklch(0.285 0.016 251.8); /* Ubuntu secondary */
+  --ring: oklch(0.647 0.165 29.23); /* Ubuntu orange */
+
+  --radius: 0.5rem;
+
+  /* Font families */
+  --font-sans: "Rubik", ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Consolas,
+    "Liberation Mono", Menlo, monospace;
+}
+
+/* Map CSS variables to Tailwind utilities */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+/* Global body styles */
+body {
+  font-family: var(--font-sans);
+  background-color: var(--background);
+  color: var(--foreground);
+  overflow: hidden;
+}
+
+/* Custom styles for the application */
+/* Ubuntu scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: oklch(0.285 0.016 251.8); /* Ubuntu secondary */
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.57 0.028 250.8); /* Ubuntu muted text */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.698 0.083 28.5); /* Ubuntu light orange */
+}
+
+/* Optimize window dragging performance */
+.window-draggable {
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Improve cursor behavior */
+.drag-handle {
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Prevent touch scrolling while dragging or resizing */
+.drag-handle,
+.window-draggable {
+  touch-action: none;
+}

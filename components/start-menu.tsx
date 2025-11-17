@@ -1,6 +1,7 @@
 import { Folder, Power, Settings, User as UserIcon } from "lucide-react";
 import type React from "react";
 import { APPS, DESKTOP_APPS } from "../constants";
+import { useBSOD } from "../contexts/bsod-context";
 
 type StartMenuProps = {
   onClose: () => void;
@@ -8,9 +9,16 @@ type StartMenuProps = {
 };
 
 const StartMenu: React.FC<StartMenuProps> = ({ onClose, onAppClick }) => {
+  const { showBSOD } = useBSOD();
+
   const handleSystemAction = (action: string) => {
     // Handle system actions here
     console.log(`System action: ${action}`);
+
+    if (action === "shutdown") {
+      showBSOD();
+    }
+
     onClose();
   };
 

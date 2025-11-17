@@ -1,7 +1,11 @@
 import type React from "react";
 import { useEffect, useState } from "react";
 
-const Clock: React.FC = () => {
+type ClockProps = {
+  className?: string;
+};
+
+const Clock: React.FC<ClockProps> = ({ className }) => {
   const [time, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -10,9 +14,9 @@ const Clock: React.FC = () => {
   }, []);
 
   return (
-    <div className="px-4 text-base text-muted-foreground">
+    <span className={className}>
       {time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-    </div>
+    </span>
   );
 };
 

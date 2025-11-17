@@ -10,9 +10,9 @@ const NotepadApp: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col bg-card p-4">
+    <div className="flex h-full flex-col rounded-xl bg-card/80 p-4 shadow-black/10 shadow-inner sm:p-6">
       <textarea
-        className="flex-1 resize-none rounded-md border border-border bg-background p-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+        className="min-h-[50vh] flex-1 resize-none rounded-2xl border border-border/40 bg-background/80 p-4 text-base text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary sm:text-lg"
         onChange={handleChange}
         placeholder="Buraya notlarınızı yazın..."
         value={content}

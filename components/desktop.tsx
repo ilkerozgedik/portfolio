@@ -33,17 +33,18 @@ const Desktop: React.FC = () => {
   return (
     <main
       aria-label="Desktop area"
-      className="relative h-full w-full flex-grow select-none overflow-hidden"
+      className="relative flex-grow select-none overflow-hidden"
       role="application"
       style={{
-        backgroundImage: `url(${wallpaperUrl})`,
+        backgroundImage: `linear-gradient(180deg, rgb(0 0 0 / 0.55), rgb(0 0 0 / 0.25)), url(${wallpaperUrl})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
       tabIndex={-1}
     >
-      <div className="absolute inset-0 p-4">
-        <div className="flex h-full flex-col flex-wrap content-start gap-4">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/30" />
+      <div className="absolute inset-0 overflow-y-auto p-4 sm:p-6 lg:p-8">
+        <div className="grid min-h-full grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
           {desktopAppConfigs.map((app) => (
             <DesktopIcon
               icon={app.icon}

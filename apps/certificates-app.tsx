@@ -2,10 +2,12 @@ import { Star } from "lucide-react";
 import type React from "react";
 
 const CertificatesApp: React.FC = () => (
-  <div className="h-full overflow-y-auto rounded-md bg-card/50 p-6 text-card-foreground">
+  <div className="h-full overflow-y-auto rounded-xl bg-card/60 p-4 text-card-foreground sm:p-6">
     <div className="mb-6 border-border border-b pb-6 text-center">
-      <h1 className="mb-2 font-bold text-4xl text-foreground">SERTİFİKALAR</h1>
-      <p className="text-lg text-primary">
+      <h1 className="mb-2 font-bold text-[clamp(2rem,4vw,2.75rem)] text-foreground">
+        SERTİFİKALAR
+      </h1>
+      <p className="text-base text-primary sm:text-lg">
         İlker Özgedik - Profesyonel Sertifikalar
       </p>
     </div>
@@ -17,45 +19,47 @@ const CertificatesApp: React.FC = () => (
           Alınan Sertifikalar
         </h2>
         <div className="space-y-6">
-          <div className="border-primary/30 border-l-4 pl-6">
-            <h3 className="mb-4 font-bold text-foreground text-lg">
-              Dil Sertifikaları
-            </h3>
-            <ul className="list-inside list-disc space-y-2 text-muted-foreground">
-              <li className="flex items-center justify-between">
-                <span>İngilizce C1</span>
-                <span className="text-primary text-sm">İngiliz Kültür</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="border-primary/30 border-l-4 pl-6">
-            <h3 className="mb-4 font-bold text-foreground text-lg">
-              Teknik Sertifikalar
-            </h3>
-            <ul className="list-inside list-disc space-y-2 text-muted-foreground">
-              <li className="flex items-center justify-between">
-                <span>PLC</span>
-                <span className="text-primary text-sm">BELTEK</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="border-primary/30 border-l-4 pl-6">
-            <h3 className="mb-4 font-bold text-foreground text-lg">
-              Yazılım Sertifikaları
-            </h3>
-            <ul className="list-inside list-disc space-y-2 text-muted-foreground">
-              <li className="flex items-center justify-between">
-                <span>Microsoft Excel</span>
-                <span className="text-primary text-sm">BTK Akademi</span>
-              </li>
-              <li className="flex items-center justify-between">
-                <span>İleri Seviye Python</span>
-                <span className="text-primary text-sm">BTK Akademi</span>
-              </li>
-            </ul>
-          </div>
+          {[
+            {
+              title: "Dil Sertifikaları",
+              items: [{ name: "İngilizce C1", org: "İngiliz Kültür" }],
+            },
+            {
+              title: "Teknik Sertifikalar",
+              items: [{ name: "PLC", org: "BELTEK" }],
+            },
+            {
+              title: "Yazılım Sertifikaları",
+              items: [
+                { name: "Microsoft Excel", org: "BTK Akademi" },
+                { name: "İleri Seviye Python", org: "BTK Akademi" },
+              ],
+            },
+          ].map((section) => (
+            <div
+              className="rounded-2xl border border-primary/15 bg-background/50 p-4 shadow-black/5 shadow-inner"
+              key={section.title}
+            >
+              <h3 className="mb-4 font-semibold text-foreground text-lg">
+                {section.title}
+              </h3>
+              <ul className="space-y-3 text-muted-foreground text-sm sm:text-base">
+                {section.items.map((item) => (
+                  <li
+                    className="flex flex-col gap-1 rounded-xl bg-card/40 p-3 sm:flex-row sm:items-center sm:justify-between"
+                    key={item.name}
+                  >
+                    <span className="font-medium text-foreground">
+                      {item.name}
+                    </span>
+                    <span className="text-primary text-xs uppercase tracking-wide sm:text-sm">
+                      {item.org}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
     </div>

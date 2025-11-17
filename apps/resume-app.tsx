@@ -2,10 +2,14 @@ import { Briefcase, GraduationCap, Mail } from "lucide-react";
 import type React from "react";
 
 const ResumeApp: React.FC = () => (
-  <div className="h-full overflow-y-auto rounded-md bg-card/50 p-6 text-card-foreground">
+  <div className="h-full overflow-y-auto rounded-xl bg-card/60 p-4 text-card-foreground sm:p-6">
     <div className="mb-6 border-border border-b pb-6 text-center">
-      <h1 className="mb-2 font-bold text-4xl text-foreground">İLKER ÖZGEDİK</h1>
-      <p className="mb-4 text-lg text-primary">Elektrik Elektronik Mühendisi</p>
+      <h1 className="mb-2 font-bold text-[clamp(2rem,4vw,2.75rem)] text-foreground">
+        İLKER ÖZGEDİK
+      </h1>
+      <p className="mb-4 text-base text-primary sm:text-lg">
+        Elektrik Elektronik Mühendisi
+      </p>
       <div className="flex flex-col items-center gap-2 text-muted-foreground text-sm">
         <div className="flex items-center gap-2">
           <Mail size={16} />
@@ -21,12 +25,14 @@ const ResumeApp: React.FC = () => (
           Deneyim
         </h2>
         <div className="space-y-6">
-          <div className="border-primary/30 border-l-4 pl-6">
-            <h3 className="font-bold text-foreground text-lg">
+          <div className="rounded-xl border border-primary/10 bg-background/40 p-4 shadow-black/10 shadow-sm">
+            <h3 className="font-semibold text-foreground text-lg">
               Freelance Yazılımcı
             </h3>
-            <p className="mb-2 text-muted-foreground text-sm">2023 – Günümüz</p>
-            <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm">
+            <p className="mb-2 text-muted-foreground text-xs uppercase tracking-wide">
+              2023 – Günümüz
+            </p>
+            <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm leading-relaxed">
               <li>Next.js ile full-stack web uygulamaları geliştirdim.</li>
               <li>
                 CI/CD süreçleri ve bulut ortamlarında deployment görevlerinde
@@ -34,17 +40,17 @@ const ResumeApp: React.FC = () => (
               </li>
             </ul>
           </div>
-          <div className="border-primary/30 border-l-4 pl-6">
-            <h3 className="font-bold text-foreground text-lg">
+          <div className="rounded-xl border border-primary/10 bg-background/40 p-4 shadow-black/10 shadow-sm">
+            <h3 className="font-semibold text-foreground text-lg">
               Elektrik Elektronik Mühendisi Stajyeri
             </h3>
-            <p className="mb-1 text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm">
               Şef Sarım San. ve Tic. Ltd. Şti.
             </p>
-            <p className="mb-2 text-muted-foreground text-sm">
+            <p className="mb-2 text-muted-foreground text-xs uppercase tracking-wide">
               Balıkesir | 2021 – 2022
             </p>
-            <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm">
+            <ul className="list-inside list-disc space-y-1 text-muted-foreground text-sm leading-relaxed">
               <li>
                 Elektrik motorları testleri (İzolasyon, Direnç, Hipot-Surge,
                 Isı, Mekanik).
@@ -60,14 +66,16 @@ const ResumeApp: React.FC = () => (
           <GraduationCap size={24} />
           Eğitim
         </h2>
-        <div className="border-primary/30 border-l-4 pl-6">
-          <h3 className="font-bold text-foreground text-lg">
+        <div className="rounded-xl border border-primary/10 bg-background/40 p-4 shadow-black/10 shadow-sm">
+          <h3 className="font-semibold text-foreground text-lg">
             Gazi Üniversitesi
           </h3>
           <p className="text-muted-foreground text-sm">
             Elektrik Elektronik Mühendisliği
           </p>
-          <p className="text-muted-foreground text-sm">2016 – 2023</p>
+          <p className="text-muted-foreground text-xs uppercase tracking-wide">
+            2016 – 2023
+          </p>
         </div>
       </section>
     </div>

@@ -11,7 +11,7 @@ const Button = ({
   className?: string;
 }) => (
   <button
-    className={`flex h-12 w-12 items-center justify-center rounded-md border border-border bg-card text-card-foreground transition-colors hover:bg-muted/50 ${className}`}
+    className={`flex h-14 min-w-[3.5rem] items-center justify-center rounded-2xl border border-border/40 bg-card text-card-foreground text-lg shadow-sm transition-colors hover:bg-muted/60 ${className}`}
     onClick={onClick}
     type="button"
   >
@@ -108,13 +108,13 @@ const CalculatorApp: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full flex-col bg-card p-4">
-      <div className="mb-4 rounded-md border border-border bg-muted/20 p-4">
-        <div className="text-right font-mono text-2xl text-foreground">
+    <div className="flex h-full flex-col rounded-xl bg-card/80 p-4 backdrop-blur-sm sm:p-6">
+      <div className="mb-4 rounded-2xl border border-border/40 bg-muted/20 p-4 shadow-black/10 shadow-inner">
+        <div className="text-right font-mono text-3xl text-foreground sm:text-4xl">
           {display}
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(64px,1fr))] gap-3">
         <Button
           className="col-span-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
           onClick={clear}

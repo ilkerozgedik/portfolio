@@ -9,7 +9,7 @@ type ContextMenuProps = {
 };
 
 const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
-  const { closeWindow, toggleMinimize, toggleMaximize, windows } =
+  const { closeWindow, toggleMinimize, toggleMaximize, windows, isMobile } =
     useWindowManager();
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +115,10 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
     }
   };
 
+  const baseItemClasses = isMobile
+    ? "flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-base text-card-foreground transition-all duration-200"
+    : "flex w-full items-center gap-2 px-3 py-2 text-left text-card-foreground text-sm transition-all duration-200";
+
   const renderWindowMenu = () => {
     const windowId = contextMenu.windowId;
     if (!windowId) {
@@ -127,7 +131,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
     return (
       <>
         <button
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-card-foreground text-sm transition-all duration-200 hover:bg-primary/15 hover:text-primary"
+          className={`${baseItemClasses} hover:bg-primary/15 hover:text-primary`}
           onClick={() => handleAction(() => toggleMinimize(windowId))}
           type="button"
         >
@@ -136,7 +140,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
         </button>
 
         <button
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-card-foreground text-sm transition-all duration-200 hover:bg-primary/15 hover:text-primary"
+          className={`${baseItemClasses} hover:bg-primary/15 hover:text-primary`}
           onClick={() => handleAction(() => toggleMaximize(windowId))}
           type="button"
         >
@@ -156,7 +160,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
         <div className="my-1 border-border/10 border-t" />
 
         <button
-          className="flex w-full items-center gap-2 px-3 py-2 text-left text-destructive-foreground text-sm transition-all duration-200 hover:bg-destructive/20"
+          className={`${baseItemClasses} text-destructive-foreground hover:bg-destructive/20`}
           onClick={() => handleAction(() => closeWindow(windowId))}
           type="button"
         >
@@ -169,7 +173,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
 
   const renderDesktopMenu = () => (
     <button
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-card-foreground text-sm transition-colors hover:bg-accent/10"
+      className={`${baseItemClasses} hover:bg-accent/10`}
       onClick={() => handleAction(() => window.location.reload())}
       type="button"
     >
@@ -180,7 +184,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
 
   const renderTaskbarMenu = () => (
     <button
-      className="flex w-full items-center gap-2 px-3 py-2 text-left text-card-foreground text-sm transition-colors hover:bg-accent/10"
+      className={`${baseItemClasses} hover:bg-accent/10`}
       onClick={() => handleAction(() => window.location.reload())}
       type="button"
     >
@@ -204,7 +208,7 @@ const ContextMenu: FC<ContextMenuProps> = ({ contextMenu }) => {
 
   return (
     <div
-      className="fixed min-w-[180px] select-none rounded-lg border border-border/20 bg-card/95 py-1 shadow-2xl ring-1 ring-primary/10 backdrop-blur-lg"
+      className={`fixed select-none border border-border/20 bg-card/95 shadow-2xl ring-1 ring-primary/10 backdrop-blur-lg ${isMobile ? "min-w-[220px] rounded-2xl p-1.5" : "min-w-[180px] rounded-lg py-1"}`}
       onContextMenu={(e) => e.preventDefault()}
       ref={menuRef}
       role="menu"

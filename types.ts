@@ -10,6 +10,8 @@ export type Size = {
   height: number;
 };
 
+export type Breakpoint = "mobile" | "tablet" | "desktop";
+
 export type WindowState = {
   id: string;
   appId: string;
@@ -28,6 +30,7 @@ export type AppConfig = {
   icon: React.ComponentType<{ className?: string }>;
   component: React.ComponentType;
   defaultSize: Size;
+  minSize?: Size;
 };
 
 export type WindowManagerContextType = {
@@ -39,4 +42,8 @@ export type WindowManagerContextType = {
   toggleMaximize: (id: string) => void;
   updateWindowPosition: (id: string, position: Point) => void;
   updateWindowSize: (id: string, size: Size) => void;
+  breakpoint: Breakpoint;
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
 };

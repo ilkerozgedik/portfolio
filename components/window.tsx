@@ -11,6 +11,7 @@ type WindowProps = {
   windowState: WindowState;
 };
 
+/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Window orchestration (drag, resize, context menus) requires several conditional branches by design. */
 const Window: React.FC<WindowProps> = ({ windowState }) => {
   const {
     closeWindow,
@@ -19,6 +20,8 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
     toggleMaximize,
     updateWindowPosition,
     updateWindowSize,
+    isMobile,
+    isTablet,
   } = useWindowManager();
   const { showContextMenu } = useContextMenu();
 
@@ -335,12 +338,28 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
     return null;
   }
 
+  const taskbarOffset = isMobile
+    ? "calc(100dvh - 4.5rem)"
+    : "calc(100dvh - 4rem)";
+  const canDrag = !(isMobile || windowState.isMaximized);
+  const canResize = !(isMobile || windowState.isMaximized);
+  const headerLayout = isMobile
+    ? "flex flex-col gap-1 py-2"
+    : "flex h-10 items-center justify-between";
+  let contentPadding = "p-6";
+  if (isTablet) {
+    contentPadding = "p-5";
+  }
+  if (isMobile) {
+    contentPadding = "p-4";
+  }
+
   const windowClasses = [
-    "absolute flex flex-col bg-card/90 backdrop-blur-lg rounded-lg shadow-2xl shadow-black/50 overflow-hidden border border-border/20 window-draggable select-none",
+    "absolute flex flex-col bg-card/90 backdrop-blur-lg shadow-2xl shadow-black/40 border border-border/20 select-none",
+    canDrag ? "window-draggable" : "",
+    isMobile ? "rounded-none" : "rounded-lg",
     isDragging ? "transition-none" : "transition-all duration-200 ease-in-out",
-    windowState.isMaximized
-      ? "top-0 left-0 w-screen h-[calc(100vh-4rem)] rounded-none"
-      : "",
+    windowState.isMaximized ? "top-0 left-0 w-full" : "",
     windowState.isFocused
       ? "border-primary/30 ring-1 ring-primary/20"
       : "border-border/20",
@@ -352,8 +371,8 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
     ? {
         left: 0,
         top: 0,
-        width: "100vw",
-        height: "calc(100vh - 4rem)",
+        width: "100%",
+        height: taskbarOffset,
         zIndex: windowState.zIndex,
       }
     : {
@@ -374,7 +393,7 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
   return (
     <div className={windowClasses} ref={windowRef} style={windowStyle}>
       {/* Resize handles: NW, NE, SE, SW */}
-      {!windowState.isMaximized && (
+      {canResize && (
         <>
           <button
             aria-label="Resize NW"
@@ -486,25 +505,33 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
           />
         </>
       )}
-      <header className="flex h-10 items-center justify-between bg-muted/20 px-2">
+      <header className={`${headerLayout} bg-muted/20 px-3`}>
         <button
           aria-label="Window title bar - drag to move"
-          className="drag-handle flex h-full flex-1 items-center gap-2 pl-2"
+          className={`${canDrag ? "drag-handle" : ""} flex flex-1 items-center gap-2 ${canDrag ? "h-full py-0" : "py-1"} ${isMobile ? "justify-between" : "pl-2"}`}
           onContextMenu={handleContextMenu}
-          onDoubleClick={() => toggleMaximize(windowState.id)}
-          onMouseDown={handleMouseDown}
-          onPointerDown={handlePointerDown}
+          onDoubleClick={() => !isMobile && toggleMaximize(windowState.id)}
+          onMouseDown={(e) => (canDrag ? handleMouseDown(e) : undefined)}
+          onPointerDown={(e) => (canDrag ? handlePointerDown(e) : undefined)}
           ref={dragHandleRef}
           type="button"
         >
-          <div className="flex items-center gap-2">
-            {AppIcon && <AppIcon className="h-5 w-5 text-muted-foreground" />}
-            <span className="font-medium text-base text-card-foreground">
+          <div className="flex flex-1 items-center gap-2">
+            {AppIcon && (
+              <AppIcon
+                className={`text-muted-foreground ${isMobile ? "h-5 w-5" : "h-5 w-5"}`}
+              />
+            )}
+            <span
+              className={`font-medium text-card-foreground ${isMobile ? "text-base" : "text-base"}`}
+            >
               {windowState.title}
             </span>
           </div>
         </button>
-        <div className="flex items-center gap-1">
+        <div
+          className={`flex items-center gap-1 ${isMobile ? "justify-end pt-1" : ""}`}
+        >
           <button
             aria-label="Minimize window"
             className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
@@ -513,18 +540,20 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
             onPointerDown={(e) => e.stopPropagation()}
             type="button"
           >
-            <Minus size={18} />
+            <Minus size={16} />
           </button>
-          <button
-            aria-label="Maximize window"
-            className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
-            onClick={() => toggleMaximize(windowState.id)}
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            type="button"
-          >
-            <Square size={18} />
-          </button>
+          {!isMobile && (
+            <button
+              aria-label="Maximize window"
+              className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
+              onClick={() => toggleMaximize(windowState.id)}
+              onMouseDown={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+              type="button"
+            >
+              <Square size={16} />
+            </button>
+          )}
           <button
             aria-label="Close window"
             className="rounded p-1 transition-colors duration-200 hover:bg-destructive/15 hover:text-destructive-foreground"
@@ -533,11 +562,11 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
             onPointerDown={(e) => e.stopPropagation()}
             type="button"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
       </header>
-      <div className="flex-grow overflow-auto p-6">
+      <div className={`flex-grow overflow-auto ${contentPadding}`}>
         {AppComponent && <AppComponent />}
       </div>
     </div>

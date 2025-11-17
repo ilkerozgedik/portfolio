@@ -15,7 +15,15 @@ const App = () => (
   <WindowProvider>
     <ContextMenuProvider>
       <BSODProvider>
-        <div className="flex h-screen w-screen flex-col font-sans">
+        <div
+          className="relative flex min-h-dvh w-full flex-col bg-background font-sans text-foreground"
+          style={{
+            paddingTop: "env(safe-area-inset-top)",
+            paddingRight: "env(safe-area-inset-right)",
+            paddingLeft: "env(safe-area-inset-left)",
+            paddingBottom: "env(safe-area-inset-bottom)",
+          }}
+        >
           <Desktop />
           <Taskbar />
           <GlobalContextMenu />

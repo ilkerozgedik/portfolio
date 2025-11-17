@@ -9,7 +9,8 @@ import Window from "./window";
 const Desktop: React.FC = () => {
   const { windows, openApp } = useWindowManager();
   const { showContextMenu } = useContextMenu();
-  const wallpaperUrl = "https://picsum.photos/seed/wallpaper/1920/1080";
+  const wallpaperUrl =
+    "https://images.unsplash.com/photo-1466854076813-4aa9ac0fc347";
 
   const desktopAppConfigs = APPS.filter((app) => DESKTOP_APPS.includes(app.id));
 

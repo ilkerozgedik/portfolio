@@ -11,148 +11,114 @@ type WindowProps = {
   windowState: WindowState;
 };
 
-/* biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Window orchestration (drag, resize, context menus) requires several conditional branches by design. */
-const Window: React.FC<WindowProps> = ({ windowState }) => {
-  const {
-    closeWindow,
-    focusWindow,
-    toggleMinimize,
-    toggleMaximize,
-    updateWindowPosition,
-    updateWindowSize,
-    isMobile,
-    isTablet,
-  } = useWindowManager();
-  const { showContextMenu } = useContextMenu();
+const clamp = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
 
-  const windowRef = useRef<HTMLDivElement>(null);
-  const dragHandleRef = useRef<HTMLButtonElement>(null);
+const useWindowDrag = ({
+  windowState,
+  focusWindow,
+  updateWindowPosition,
+  showContextMenu,
+}: {
+  windowState: WindowState;
+  focusWindow: (id: string) => void;
+  updateWindowPosition: (id: string, position: Point) => void;
+  showContextMenu: (
+    x: number,
+    y: number,
+    type: "window" | "desktop" | "taskbar",
+    windowId?: string
+  ) => void;
+}) => {
+  const dragHandleRef = useRef<HTMLButtonElement | null>(null);
   const pointerIdRef = useRef<number | null>(null);
-
   const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeDir, setResizeDir] = useState<string | null>(null);
-  const resizeStartRef = useRef<Point>({ x: 0, y: 0 });
-  const initialSizeRef = useRef<Size>({ width: 0, height: 0 });
-  const initialPosRef = useRef<Point>({ x: 0, y: 0 });
   const [dragStart, setDragStart] = useState<Point>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | undefined>(undefined);
-  const lastPositionRef = useRef<Point>({ x: 0, y: 0 });
+  const lastPositionRef = useRef<Point>({
+    x: windowState.position.x,
+    y: windowState.position.y,
+  });
 
-  const appConfig = APPS.find((app) => app.id === windowState.appId);
-
-  const constrainX = useCallback(
-    (x: number, vWidth: number, wWidth: number) => {
-      const minVisibleWidth = Math.min(200, wWidth * 0.3);
-
-      if (x < -wWidth + minVisibleWidth) {
-        return -wWidth + minVisibleWidth;
-      }
-      if (x > vWidth - minVisibleWidth) {
-        return vWidth - minVisibleWidth;
-      }
-      return x;
-    },
-    []
-  );
-
-  const constrainY = useCallback(
-    (y: number, vHeight: number, wHeight: number) => {
-      const minVisibleHeight = Math.min(100, wHeight * 0.3);
-
-      if (y < 0) {
-        return 0;
-      }
-      if (y > vHeight - minVisibleHeight) {
-        return vHeight - minVisibleHeight;
-      }
-      return y;
-    },
-    []
-  );
-
-  const calculateDragPosition = useCallback(
-    (e: MouseEvent, dragPosition: Point) => {
+  const calculatePosition = useCallback(
+    (event: MouseEvent | PointerEvent, start: Point) => {
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight - 64; // 64px = 4rem (taskbar height)
+      const viewportHeight = window.innerHeight - 64;
       const windowWidth = windowState.size.width;
       const windowHeight = windowState.size.height;
+      const minVisibleWidth = Math.min(200, windowWidth * 0.3);
+      const minVisibleHeight = Math.min(100, windowHeight * 0.3);
 
-      const rawX = e.clientX - dragPosition.x;
-      const rawY = e.clientY - dragPosition.y;
-      const constrainedX = constrainX(rawX, viewportWidth, windowWidth);
-      const constrainedY = constrainY(rawY, viewportHeight, windowHeight);
+      const rawX = event.clientX - start.x;
+      const rawY = event.clientY - start.y;
 
-      return { newX: constrainedX, newY: constrainedY };
+      const x = clamp(
+        rawX,
+        -windowWidth + minVisibleWidth,
+        viewportWidth - minVisibleWidth
+      );
+      const y = clamp(rawY, 0, viewportHeight - minVisibleHeight);
+
+      return { x, y };
     },
-    [windowState.size, constrainX, constrainY]
+    [windowState.size.height, windowState.size.width]
   );
 
-  const handleContextMenu = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      showContextMenu(e.clientX, e.clientY, "window", windowState.id);
-    },
-    [showContextMenu, windowState.id]
-  );
-
-  const onDragStart = useCallback(
-    (clientX: number, clientY: number, pId?: number) => {
+  const startDrag = useCallback(
+    (clientX: number, clientY: number, pointerId?: number) => {
       focusWindow(windowState.id);
       if (windowState.isMaximized) {
         return;
       }
       setIsDragging(true);
-      const offsetX = clientX - windowState.position.x;
-      const offsetY = clientY - windowState.position.y;
-      setDragStart({ x: offsetX, y: offsetY });
+      setDragStart({
+        x: clientX - windowState.position.x,
+        y: clientY - windowState.position.y,
+      });
       lastPositionRef.current = {
         x: windowState.position.x,
         y: windowState.position.y,
       };
-      if (typeof pId === "number") {
-        pointerIdRef.current = pId;
-        const el = dragHandleRef.current as Element | null;
-        if (el) {
-          const elAsAny = el as unknown as {
-            setPointerCapture?: (id: number) => void;
-            releasePointerCapture?: (id: number) => void;
-          };
-          if (elAsAny.setPointerCapture) {
-            elAsAny.setPointerCapture(pId);
-          }
-        }
+      if (typeof pointerId === "number") {
+        pointerIdRef.current = pointerId;
+        dragHandleRef.current?.setPointerCapture?.(pointerId);
       }
     },
-    [focusWindow, windowState.id, windowState.position, windowState.isMaximized]
+    [
+      focusWindow,
+      windowState.id,
+      windowState.isMaximized,
+      windowState.position.x,
+      windowState.position.y,
+    ]
   );
 
   const handlePointerDown = useCallback(
-    (e: React.PointerEvent<HTMLButtonElement>) => {
+    (event: React.PointerEvent<HTMLButtonElement>) => {
       if (
-        e.target !== dragHandleRef.current &&
-        !dragHandleRef.current?.contains(e.target as Node)
+        event.target !== dragHandleRef.current &&
+        !dragHandleRef.current?.contains(event.target as Node)
       ) {
         return;
       }
-      e.preventDefault();
-      onDragStart(e.clientX, e.clientY, e.pointerId);
+      event.preventDefault();
+      startDrag(event.clientX, event.clientY, event.pointerId);
     },
-    [onDragStart]
+    [startDrag]
   );
 
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => {
+    (event: React.MouseEvent<HTMLButtonElement>) => {
       if (
-        e.target !== dragHandleRef.current &&
-        !dragHandleRef.current?.contains(e.target as Node)
+        event.target !== dragHandleRef.current &&
+        !dragHandleRef.current?.contains(event.target as Node)
       ) {
         return;
       }
-      e.preventDefault();
-      onDragStart(e.clientX, e.clientY);
+      event.preventDefault();
+      startDrag(event.clientX, event.clientY);
     },
-    [onDragStart]
+    [startDrag]
   );
 
   useEffect(() => {
@@ -160,36 +126,27 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
       return;
     }
 
-    const handleMouseMove = (e: MouseEvent | PointerEvent) => {
+    const handleMove = (event: MouseEvent | PointerEvent) => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
 
       animationFrameRef.current = requestAnimationFrame(() => {
-        const { newX, newY } = calculateDragPosition(e, dragStart);
-
-        // Only update if position actually changed to avoid unnecessary re-renders
+        const { x, y } = calculatePosition(event, dragStart);
         if (
-          Math.abs(newX - lastPositionRef.current.x) > 0.5 ||
-          Math.abs(newY - lastPositionRef.current.y) > 0.5
+          Math.abs(x - lastPositionRef.current.x) > 0.5 ||
+          Math.abs(y - lastPositionRef.current.y) > 0.5
         ) {
-          updateWindowPosition(windowState.id, { x: newX, y: newY });
-          lastPositionRef.current = { x: newX, y: newY };
+          updateWindowPosition(windowState.id, { x, y });
+          lastPositionRef.current = { x, y };
         }
       });
     };
 
-    const handleMouseUp = () => {
+    const stopDragging = () => {
       setIsDragging(false);
-      // Release pointer capture if we stored one on drag handle
       if (pointerIdRef.current != null && dragHandleRef.current) {
-        try {
-          (dragHandleRef.current as unknown as Element).releasePointerCapture(
-            pointerIdRef.current
-          );
-        } catch {
-          // ignore if API not supported
-        }
+        dragHandleRef.current.releasePointerCapture?.(pointerIdRef.current);
         pointerIdRef.current = null;
       }
       if (animationFrameRef.current) {
@@ -197,35 +154,22 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
       }
     };
 
-    document.addEventListener("mousemove", handleMouseMove as EventListener);
-    document.addEventListener("mouseup", handleMouseUp as EventListener);
-    // Pointer events support for touch devices
-    document.addEventListener("pointermove", handleMouseMove as EventListener);
-    document.addEventListener("pointerup", handleMouseUp as EventListener);
-    document.addEventListener("pointercancel", handleMouseUp as EventListener);
-    document.addEventListener("touchend", handleMouseUp as EventListener);
-    document.addEventListener("touchcancel", handleMouseUp as EventListener);
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", stopDragging);
+    document.addEventListener("pointermove", handleMove);
+    document.addEventListener("pointerup", stopDragging);
+    document.addEventListener("pointercancel", stopDragging);
+    document.addEventListener("touchend", stopDragging);
+    document.addEventListener("touchcancel", stopDragging);
 
     return () => {
-      document.removeEventListener(
-        "mousemove",
-        handleMouseMove as EventListener
-      );
-      document.removeEventListener("mouseup", handleMouseUp as EventListener);
-      document.removeEventListener(
-        "pointermove",
-        handleMouseMove as EventListener
-      );
-      document.removeEventListener("pointerup", handleMouseUp as EventListener);
-      document.removeEventListener(
-        "pointercancel",
-        handleMouseUp as EventListener
-      );
-      document.removeEventListener("touchend", handleMouseUp as EventListener);
-      document.removeEventListener(
-        "touchcancel",
-        handleMouseUp as EventListener
-      );
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", stopDragging);
+      document.removeEventListener("pointermove", handleMove);
+      document.removeEventListener("pointerup", stopDragging);
+      document.removeEventListener("pointercancel", stopDragging);
+      document.removeEventListener("touchend", stopDragging);
+      document.removeEventListener("touchcancel", stopDragging);
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
@@ -236,10 +180,44 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
     updateWindowPosition,
     windowState.id,
     windowState.isMaximized,
-    calculateDragPosition,
+    calculatePosition,
   ]);
 
-  // ----- RESIZE HANDLING -----
+  const handleContextMenu = useCallback(
+    (event: React.MouseEvent) => {
+      event.preventDefault();
+      showContextMenu(event.clientX, event.clientY, "window", windowState.id);
+    },
+    [showContextMenu, windowState.id]
+  );
+
+  return {
+    dragHandleRef,
+    handleMouseDown,
+    handlePointerDown,
+    handleContextMenu,
+    isDragging,
+  };
+};
+
+const useWindowResize = ({
+  windowState,
+  updateWindowPosition,
+  updateWindowSize,
+  windowRef,
+}: {
+  windowState: WindowState;
+  updateWindowPosition: (id: string, position: Point) => void;
+  updateWindowSize: (id: string, size: Size) => void;
+  windowRef: React.RefObject<HTMLDivElement | null>;
+}) => {
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeDir, setResizeDir] = useState<string | null>(null);
+  const resizeStartRef = useRef<Point>({ x: 0, y: 0 });
+  const initialSizeRef = useRef<Size>({ width: 0, height: 0 });
+  const initialPosRef = useRef<Point>({ x: 0, y: 0 });
+  const pointerIdRef = useRef<number | null>(null);
+
   const startResize = useCallback(
     (dir: string, clientX: number, clientY: number) => {
       setIsResizing(true);
@@ -248,7 +226,7 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
       initialSizeRef.current = { ...windowState.size };
       initialPosRef.current = { ...windowState.position };
     },
-    [windowState.size, windowState.position]
+    [windowState.position, windowState.size]
   );
 
   const performResize = useCallback(
@@ -286,53 +264,238 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
   );
 
   useEffect(() => {
-    if (!isResizing) {
+    if (!(isResizing && resizeDir)) {
       return;
     }
 
-    const handlePointerMove = (ev: PointerEvent) => {
-      if (!isResizing) {
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!(isResizing && resizeDir)) {
         return;
       }
-      if (!resizeDir) {
-        return;
-      }
-      const dx = ev.clientX - resizeStartRef.current.x;
-      const dy = ev.clientY - resizeStartRef.current.y;
+      const dx = event.clientX - resizeStartRef.current.x;
+      const dy = event.clientY - resizeStartRef.current.y;
       performResize(resizeDir, dx, dy);
     };
 
-    const handlePointerUp = () => {
+    const stopResizing = () => {
       setIsResizing(false);
       setResizeDir(null);
       if (pointerIdRef.current != null && windowRef.current) {
-        try {
-          (windowRef.current as Element).releasePointerCapture(
-            pointerIdRef.current
-          );
-        } catch {
-          // ignore
-        }
+        windowRef.current.releasePointerCapture?.(pointerIdRef.current);
         pointerIdRef.current = null;
       }
     };
 
     document.addEventListener("pointermove", handlePointerMove);
-    document.addEventListener("pointerup", handlePointerUp);
-    document.addEventListener("pointercancel", handlePointerUp);
-    document.addEventListener("mouseup", handlePointerUp);
-    document.addEventListener("touchend", handlePointerUp);
-    document.addEventListener("touchcancel", handlePointerUp);
+    document.addEventListener("pointerup", stopResizing);
+    document.addEventListener("pointercancel", stopResizing);
+    document.addEventListener("mouseup", stopResizing);
+    document.addEventListener("touchend", stopResizing);
+    document.addEventListener("touchcancel", stopResizing);
 
     return () => {
       document.removeEventListener("pointermove", handlePointerMove);
-      document.removeEventListener("pointerup", handlePointerUp);
-      document.removeEventListener("pointercancel", handlePointerUp);
-      document.removeEventListener("mouseup", handlePointerUp);
-      document.removeEventListener("touchend", handlePointerUp);
-      document.removeEventListener("touchcancel", handlePointerUp);
+      document.removeEventListener("pointerup", stopResizing);
+      document.removeEventListener("pointercancel", stopResizing);
+      document.removeEventListener("mouseup", stopResizing);
+      document.removeEventListener("touchend", stopResizing);
+      document.removeEventListener("touchcancel", stopResizing);
     };
-  }, [isResizing, resizeDir, performResize]);
+  }, [isResizing, resizeDir, performResize, windowRef]);
+
+  const handleMouseDown = useCallback(
+    (dir: string, event: React.MouseEvent<HTMLButtonElement>) => {
+      startResize(dir, event.clientX, event.clientY);
+    },
+    [startResize]
+  );
+
+  const handlePointerDown = useCallback(
+    (dir: string, event: React.PointerEvent<HTMLButtonElement>) => {
+      pointerIdRef.current = event.pointerId;
+      windowRef.current?.setPointerCapture?.(event.pointerId);
+      startResize(dir, event.clientX, event.clientY);
+    },
+    [startResize, windowRef]
+  );
+
+  return {
+    isResizing,
+    handleMouseDown,
+    handlePointerDown,
+  };
+};
+
+const WindowResizeHandles: React.FC<{
+  canResize: boolean;
+  onMouseDown: (
+    dir: string,
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => void;
+  onPointerDown: (
+    dir: string,
+    event: React.PointerEvent<HTMLButtonElement>
+  ) => void;
+}> = ({ canResize, onMouseDown, onPointerDown }) => {
+  if (!canResize) {
+    return null;
+  }
+
+  const handles = [
+    { dir: "nw", style: { left: 0, top: 0 }, cursor: "nwse-resize" },
+    { dir: "ne", style: { right: 0, top: 0 }, cursor: "nesw-resize" },
+    { dir: "se", style: { right: 0, bottom: 0 }, cursor: "nwse-resize" },
+    { dir: "sw", style: { left: 0, bottom: 0 }, cursor: "nesw-resize" },
+  ] as const;
+
+  return (
+    <>
+      {handles.map((handle) => (
+        <button
+          aria-label={`Resize ${handle.dir.toUpperCase()}`}
+          className="absolute"
+          key={handle.dir}
+          onMouseDown={(event) => onMouseDown(handle.dir, event)}
+          onPointerDown={(event) => onPointerDown(handle.dir, event)}
+          style={{
+            ...(handle.style as React.CSSProperties),
+            transform: `translate(${handle.dir.includes("e") ? "50%" : "-50%"}, ${handle.dir.includes("s") ? "50%" : "-50%"})`,
+            width: 16,
+            height: 16,
+            cursor: handle.cursor,
+            background: "transparent",
+            zIndex: 50,
+          }}
+          type="button"
+        />
+      ))}
+    </>
+  );
+};
+
+const WindowHeader: React.FC<{
+  canDrag: boolean;
+  isMobile: boolean;
+  dragHandleRef: React.RefObject<HTMLButtonElement | null>;
+  handleContextMenu: (event: React.MouseEvent) => void;
+  handleMouseDown: (event: React.MouseEvent<HTMLButtonElement>) => void;
+  handlePointerDown: (event: React.PointerEvent<HTMLButtonElement>) => void;
+  toggleMaximize: (id: string) => void;
+  toggleMinimize: (id: string) => void;
+  closeWindow: (id: string) => void;
+  windowState: WindowState;
+  AppIcon?: React.ComponentType<{ className?: string }>;
+  headerLayout: string;
+}> = ({
+  canDrag,
+  isMobile,
+  dragHandleRef,
+  handleContextMenu,
+  handleMouseDown,
+  handlePointerDown,
+  toggleMaximize,
+  toggleMinimize,
+  closeWindow,
+  windowState,
+  AppIcon,
+  headerLayout,
+}) => (
+  <header className={`${headerLayout} bg-muted/20 px-3`}>
+    <button
+      aria-label="Window title bar - drag to move"
+      className={`${canDrag ? "drag-handle" : ""} flex flex-1 items-center gap-2 ${canDrag ? "h-full py-0" : "py-1"} ${isMobile ? "justify-between" : "pl-2"}`}
+      onContextMenu={handleContextMenu}
+      onDoubleClick={() => !isMobile && toggleMaximize(windowState.id)}
+      onMouseDown={(event) => (canDrag ? handleMouseDown(event) : undefined)}
+      onPointerDown={(event) =>
+        canDrag ? handlePointerDown(event) : undefined
+      }
+      ref={dragHandleRef}
+      type="button"
+    >
+      <div className="flex flex-1 items-center gap-2">
+        {AppIcon && <AppIcon className="h-5 w-5 text-muted-foreground" />}
+        <span className="font-medium text-base text-card-foreground">
+          {windowState.title}
+        </span>
+      </div>
+    </button>
+    <div
+      className={`flex items-center gap-1 ${isMobile ? "justify-end pt-1" : ""}`}
+    >
+      <button
+        aria-label="Minimize window"
+        className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
+        onClick={() => toggleMinimize(windowState.id)}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        type="button"
+      >
+        <Minus size={16} />
+      </button>
+      {!isMobile && (
+        <button
+          aria-label="Maximize window"
+          className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
+          onClick={() => toggleMaximize(windowState.id)}
+          onMouseDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          type="button"
+        >
+          <Square size={16} />
+        </button>
+      )}
+      <button
+        aria-label="Close window"
+        className="rounded p-1 transition-colors duration-200 hover:bg-destructive/15 hover:text-destructive-foreground"
+        onClick={() => closeWindow(windowState.id)}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        type="button"
+      >
+        <X size={16} />
+      </button>
+    </div>
+  </header>
+);
+
+const Window: React.FC<WindowProps> = ({ windowState }) => {
+  const {
+    closeWindow,
+    focusWindow,
+    toggleMinimize,
+    toggleMaximize,
+    updateWindowPosition,
+    updateWindowSize,
+    isMobile,
+    isTablet,
+  } = useWindowManager();
+  const { showContextMenu } = useContextMenu();
+
+  const windowRef = useRef<HTMLDivElement | null>(null);
+
+  const {
+    dragHandleRef,
+    handleMouseDown,
+    handlePointerDown,
+    handleContextMenu,
+    isDragging,
+  } = useWindowDrag({
+    windowState,
+    focusWindow,
+    updateWindowPosition,
+    showContextMenu,
+  });
+
+  const {
+    handleMouseDown: handleResizeMouseDown,
+    handlePointerDown: handleResizePointerDown,
+  } = useWindowResize({
+    windowState,
+    updateWindowPosition,
+    updateWindowSize,
+    windowRef,
+  });
 
   if (windowState.isMinimized) {
     return null;
@@ -353,6 +516,10 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
   if (isMobile) {
     contentPadding = "p-4";
   }
+
+  const appConfig = APPS.find((app) => app.id === windowState.appId);
+  const AppIcon = appConfig?.icon;
+  const AppComponent = appConfig?.component;
 
   const windowClasses = [
     "absolute flex flex-col bg-card/90 backdrop-blur-lg shadow-2xl shadow-black/40 border border-border/20 select-none",
@@ -387,185 +554,27 @@ const Window: React.FC<WindowProps> = ({ windowState }) => {
         minHeight: 150,
       };
 
-  const AppIcon = appConfig?.icon;
-  const AppComponent = appConfig?.component;
-
   return (
     <div className={windowClasses} ref={windowRef} style={windowStyle}>
-      {/* Resize handles: NW, NE, SE, SW */}
-      {canResize && (
-        <>
-          <button
-            aria-label="Resize NW"
-            className="absolute"
-            onMouseDown={(e) => startResize("nw", e.clientX, e.clientY)}
-            onPointerDown={(e) => {
-              const pId = e.pointerId;
-              pointerIdRef.current = pId;
-              if (
-                typeof (windowRef.current as Element)?.setPointerCapture ===
-                "function"
-              ) {
-                (windowRef.current as Element).setPointerCapture(pId);
-              }
-              startResize("nw", e.clientX, e.clientY);
-            }}
-            style={{
-              left: 0,
-              top: 0,
-              transform: "translate(-50%, -50%)",
-              width: 16,
-              height: 16,
-              cursor: "nwse-resize",
-              background: "transparent",
-              zIndex: 50,
-            }}
-            type="button"
-          />
-          <button
-            aria-label="Resize NE"
-            className="absolute"
-            onMouseDown={(e) => startResize("ne", e.clientX, e.clientY)}
-            onPointerDown={(e) => {
-              const pId = e.pointerId;
-              pointerIdRef.current = pId;
-              if (
-                typeof (windowRef.current as Element)?.setPointerCapture ===
-                "function"
-              ) {
-                (windowRef.current as Element).setPointerCapture(pId);
-              }
-              startResize("ne", e.clientX, e.clientY);
-            }}
-            style={{
-              right: 0,
-              top: 0,
-              transform: "translate(50%, -50%)",
-              width: 16,
-              height: 16,
-              cursor: "nesw-resize",
-              background: "transparent",
-              zIndex: 50,
-            }}
-            type="button"
-          />
-          <button
-            aria-label="Resize SE"
-            className="absolute"
-            onMouseDown={(e) => startResize("se", e.clientX, e.clientY)}
-            onPointerDown={(e) => {
-              const pId = e.pointerId;
-              pointerIdRef.current = pId;
-              if (
-                typeof (windowRef.current as Element)?.setPointerCapture ===
-                "function"
-              ) {
-                (windowRef.current as Element).setPointerCapture(pId);
-              }
-              startResize("se", e.clientX, e.clientY);
-            }}
-            style={{
-              right: 0,
-              bottom: 0,
-              transform: "translate(50%, 50%)",
-              width: 16,
-              height: 16,
-              cursor: "nwse-resize",
-              background: "transparent",
-              zIndex: 50,
-            }}
-            type="button"
-          />
-          <button
-            aria-label="Resize SW"
-            className="absolute"
-            onMouseDown={(e) => startResize("sw", e.clientX, e.clientY)}
-            onPointerDown={(e) => {
-              const pId = e.pointerId;
-              pointerIdRef.current = pId;
-              if (
-                typeof (windowRef.current as Element)?.setPointerCapture ===
-                "function"
-              ) {
-                (windowRef.current as Element).setPointerCapture(pId);
-              }
-              startResize("sw", e.clientX, e.clientY);
-            }}
-            style={{
-              left: 0,
-              bottom: 0,
-              transform: "translate(-50%, 50%)",
-              width: 16,
-              height: 16,
-              cursor: "nesw-resize",
-              background: "transparent",
-              zIndex: 50,
-            }}
-            type="button"
-          />
-        </>
-      )}
-      <header className={`${headerLayout} bg-muted/20 px-3`}>
-        <button
-          aria-label="Window title bar - drag to move"
-          className={`${canDrag ? "drag-handle" : ""} flex flex-1 items-center gap-2 ${canDrag ? "h-full py-0" : "py-1"} ${isMobile ? "justify-between" : "pl-2"}`}
-          onContextMenu={handleContextMenu}
-          onDoubleClick={() => !isMobile && toggleMaximize(windowState.id)}
-          onMouseDown={(e) => (canDrag ? handleMouseDown(e) : undefined)}
-          onPointerDown={(e) => (canDrag ? handlePointerDown(e) : undefined)}
-          ref={dragHandleRef}
-          type="button"
-        >
-          <div className="flex flex-1 items-center gap-2">
-            {AppIcon && (
-              <AppIcon
-                className={`text-muted-foreground ${isMobile ? "h-5 w-5" : "h-5 w-5"}`}
-              />
-            )}
-            <span
-              className={`font-medium text-card-foreground ${isMobile ? "text-base" : "text-base"}`}
-            >
-              {windowState.title}
-            </span>
-          </div>
-        </button>
-        <div
-          className={`flex items-center gap-1 ${isMobile ? "justify-end pt-1" : ""}`}
-        >
-          <button
-            aria-label="Minimize window"
-            className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
-            onClick={() => toggleMinimize(windowState.id)}
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            type="button"
-          >
-            <Minus size={16} />
-          </button>
-          {!isMobile && (
-            <button
-              aria-label="Maximize window"
-              className="rounded p-1 transition-colors duration-200 hover:bg-muted/30 hover:text-muted-foreground"
-              onClick={() => toggleMaximize(windowState.id)}
-              onMouseDown={(e) => e.stopPropagation()}
-              onPointerDown={(e) => e.stopPropagation()}
-              type="button"
-            >
-              <Square size={16} />
-            </button>
-          )}
-          <button
-            aria-label="Close window"
-            className="rounded p-1 transition-colors duration-200 hover:bg-destructive/15 hover:text-destructive-foreground"
-            onClick={() => closeWindow(windowState.id)}
-            onMouseDown={(e) => e.stopPropagation()}
-            onPointerDown={(e) => e.stopPropagation()}
-            type="button"
-          >
-            <X size={16} />
-          </button>
-        </div>
-      </header>
+      <WindowResizeHandles
+        canResize={canResize}
+        onMouseDown={handleResizeMouseDown}
+        onPointerDown={handleResizePointerDown}
+      />
+      <WindowHeader
+        AppIcon={AppIcon}
+        canDrag={canDrag}
+        closeWindow={closeWindow}
+        dragHandleRef={dragHandleRef}
+        handleContextMenu={handleContextMenu}
+        handleMouseDown={handleMouseDown}
+        handlePointerDown={handlePointerDown}
+        headerLayout={headerLayout}
+        isMobile={isMobile}
+        toggleMaximize={toggleMaximize}
+        toggleMinimize={toggleMinimize}
+        windowState={windowState}
+      />
       <div className={`flex-grow overflow-auto ${contentPadding}`}>
         {AppComponent && <AppComponent />}
       </div>

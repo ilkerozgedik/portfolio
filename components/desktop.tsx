@@ -42,15 +42,17 @@ const Desktop: React.FC = () => {
       }}
       tabIndex={-1}
     >
-      <div className="absolute top-0 left-0 flex flex-col gap-2 p-4">
-        {desktopAppConfigs.map((app) => (
-          <DesktopIcon
-            icon={app.icon}
-            key={app.id}
-            label={app.title}
-            onClick={() => openApp(app.id)}
-          />
-        ))}
+      <div className="absolute inset-0 p-4">
+        <div className="flex h-full flex-col flex-wrap content-start gap-4">
+          {desktopAppConfigs.map((app) => (
+            <DesktopIcon
+              icon={app.icon}
+              key={app.id}
+              label={app.title}
+              onClick={() => openApp(app.id)}
+            />
+          ))}
+        </div>
       </div>
 
       {windows.map((window) => (

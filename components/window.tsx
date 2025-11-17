@@ -5,6 +5,7 @@ import { APPS } from "../constants";
 
 import { useContextMenu } from "../contexts/context-menu-context";
 import { useWindowManager } from "../hooks/use-window-management";
+import { TASKBAR_HEIGHT } from "../lib/window-layout";
 import type { Point, Size, WindowState } from "../types";
 
 type WindowProps = {
@@ -43,7 +44,7 @@ const useWindowDrag = ({
   const calculatePosition = useCallback(
     (event: MouseEvent | PointerEvent, start: Point) => {
       const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight - 64;
+      const viewportHeight = window.innerHeight - TASKBAR_HEIGHT;
       const windowWidth = windowState.size.width;
       const windowHeight = windowState.size.height;
       const minVisibleWidth = Math.min(200, windowWidth * 0.3);

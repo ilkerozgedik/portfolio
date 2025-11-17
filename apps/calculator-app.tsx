@@ -1,5 +1,10 @@
 import type React from "react";
 import { useState } from "react";
+import {
+  executeOperation,
+  formatDisplay,
+  type OperationSymbol,
+} from "../lib/calculator";
 
 const Button = ({
   children,
@@ -22,23 +27,44 @@ const Button = ({
 const CalculatorApp: React.FC = () => {
   const [display, setDisplay] = useState("0");
   const [previousValue, setPreviousValue] = useState<number | null>(null);
-  const [operation, setOperation] = useState<string | null>(null);
+  const [operation, setOperation] = useState<OperationSymbol | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const inputDigit = (digit: number) => {
-    if (waitingForOperand) {
-      setDisplay(String(digit));
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === "0" ? String(digit) : display + digit);
+  const clearError = () => {
+    if (errorMessage) {
+      setErrorMessage(null);
     }
   };
 
+  const inputDigit = (digit: number) => {
+    if (errorMessage) {
+      setDisplay(String(digit));
+      setWaitingForOperand(false);
+      setErrorMessage(null);
+      return;
+    }
+    if (waitingForOperand) {
+      setDisplay(String(digit));
+      setWaitingForOperand(false);
+      return;
+    }
+    setDisplay(display === "0" ? String(digit) : display + digit);
+  };
+
   const inputDecimal = () => {
+    if (errorMessage) {
+      setDisplay("0.");
+      setWaitingForOperand(false);
+      setErrorMessage(null);
+      return;
+    }
     if (waitingForOperand) {
       setDisplay("0.");
       setWaitingForOperand(false);
-    } else if (display.indexOf(".") === -1) {
+      return;
+    }
+    if (!display.includes(".")) {
       setDisplay(`${display}.`);
     }
   };
@@ -48,59 +74,60 @@ const CalculatorApp: React.FC = () => {
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
+    setErrorMessage(null);
   };
 
-  const formatDisplay = (value: number) => {
-    const str = String(value);
-    if (str.includes(".")) {
-      const parts = str.split(".");
-      if (parts[1] && parts[1].length > 8) {
-        return value.toFixed(8);
-      }
+  const commitError = (message: string) => {
+    setErrorMessage(message);
+    setDisplay("Error");
+    setPreviousValue(null);
+    setOperation(null);
+    setWaitingForOperand(false);
+  };
+
+  const performOperation = (nextOperation: OperationSymbol) => {
+    if (errorMessage) {
+      return;
     }
-    return str;
-  };
-
-  const performOperation = (nextOperation: string) => {
     const inputValue = Number.parseFloat(display);
 
     if (previousValue === null) {
       setPreviousValue(inputValue);
     } else if (operation) {
-      const currentValue = previousValue || 0;
-      const newValue = calculate(currentValue, inputValue, operation);
-
-      setDisplay(formatDisplay(newValue));
-      setPreviousValue(newValue);
+      const { value, error } = executeOperation(
+        previousValue ?? 0,
+        inputValue,
+        operation
+      );
+      if (error) {
+        commitError(error);
+        return;
+      }
+      setDisplay(formatDisplay(value));
+      setPreviousValue(value);
     }
 
     setWaitingForOperand(true);
     setOperation(nextOperation);
   };
 
-  const calculate = (firstValue: number, secondValue: number, op: string) => {
-    switch (op) {
-      case "+":
-        return firstValue + secondValue;
-      case "-":
-        return firstValue - secondValue;
-      case "*":
-        return firstValue * secondValue;
-      case "/":
-        return firstValue / secondValue;
-      case "=":
-        return secondValue;
-      default:
-        return secondValue;
-    }
-  };
-
   const handleEquals = () => {
+    if (errorMessage) {
+      return;
+    }
     const inputValue = Number.parseFloat(display);
 
     if (previousValue !== null && operation) {
-      const newValue = calculate(previousValue, inputValue, operation);
-      setDisplay(formatDisplay(newValue));
+      const { value, error } = executeOperation(
+        previousValue,
+        inputValue,
+        operation
+      );
+      if (error || value === null) {
+        commitError(error ?? "Geçersiz işlem");
+        return;
+      }
+      setDisplay(formatDisplay(value));
       setPreviousValue(null);
       setOperation(null);
       setWaitingForOperand(true);
@@ -113,6 +140,11 @@ const CalculatorApp: React.FC = () => {
         <div className="text-right font-mono text-3xl text-foreground sm:text-4xl">
           {display}
         </div>
+        {errorMessage && (
+          <p className="mt-2 text-right text-destructive text-xs">
+            {errorMessage}
+          </p>
+        )}
       </div>
       <div className="grid grid-cols-[repeat(auto-fit,minmax(64px,1fr))] gap-3">
         <Button

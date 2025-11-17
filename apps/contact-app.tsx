@@ -1,14 +1,86 @@
 import { Copy, Github, Linkedin, Mail } from "lucide-react";
 import type React from "react";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+type CopyFeedback = {
+  field: string;
+  status: "success" | "error";
+  message?: string;
+};
 
 const ContactApp: React.FC = () => {
-  const [copied, setCopied] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<CopyFeedback | null>(null);
 
-  const copyToClipboard = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(field);
-  };
+  useEffect(() => {
+    if (!feedback) {
+      return;
+    }
+    const timer = window.setTimeout(() => setFeedback(null), 2500);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
+  const copyToClipboard = useCallback(async (text: string, field: string) => {
+    const fallbackCopy = () => {
+      try {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.setAttribute("readonly", "");
+        textarea.style.position = "absolute";
+        textarea.style.left = "-9999px";
+        document.body.append(textarea);
+        const selection = document.getSelection();
+        const selectedRange =
+          selection && selection.rangeCount > 0
+            ? selection.getRangeAt(0)
+            : null;
+        textarea.select();
+        const success = document.execCommand("copy");
+        textarea.blur();
+        textarea.remove();
+        if (selectedRange && selection) {
+          selection.removeAllRanges();
+          selection.addRange(selectedRange);
+        }
+        return success;
+      } catch {
+        return false;
+      }
+    };
+
+    const setSuccess = () =>
+      setFeedback({
+        field,
+        status: "success",
+        message: "Kopyalandı!",
+      });
+
+    const setError = (message: string) =>
+      setFeedback({
+        field,
+        status: "error",
+        message,
+      });
+
+    try {
+      if (!navigator?.clipboard?.writeText) {
+        if (fallbackCopy()) {
+          setSuccess();
+        } else {
+          setError("Kopyalanamadı");
+        }
+        return;
+      }
+
+      await navigator.clipboard.writeText(text);
+      setSuccess();
+    } catch {
+      if (fallbackCopy()) {
+        setSuccess();
+        return;
+      }
+      setError("Kopyalama izni verilmedi");
+    }
+  }, []);
 
   const contactInfo = [
     {
@@ -63,11 +135,21 @@ const ContactApp: React.FC = () => {
               </a>
               <button
                 className="inline-flex items-center gap-2 self-start rounded-full border border-primary/40 px-3 py-1 text-muted-foreground text-xs uppercase tracking-wide transition-colors hover:border-primary hover:text-foreground"
-                onClick={() => copyToClipboard(item.value, item.label)}
+                onClick={() => {
+                  void copyToClipboard(item.value, item.label);
+                }}
                 type="button"
               >
-                {copied === item.label ? (
-                  <span className="text-primary text-xs">Kopyalandı!</span>
+                {feedback?.field === item.label &&
+                feedback.status === "success" ? (
+                  <span className="text-primary text-xs">
+                    {feedback.message}
+                  </span>
+                ) : feedback?.field === item.label &&
+                  feedback.status === "error" ? (
+                  <span className="text-destructive text-xs">
+                    {feedback.message}
+                  </span>
                 ) : (
                   <>
                     <Copy size={14} />

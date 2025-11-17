@@ -7,6 +7,13 @@ import {
   useState,
 } from "react";
 import { APPS } from "../constants";
+import {
+  clampWindowPlacement,
+  TASKBAR_HEIGHT,
+  WINDOW_EDGE_GAP,
+  WINDOW_MIN_HEIGHT,
+  WINDOW_MIN_WIDTH,
+} from "../lib/window-layout";
 import type {
   Point,
   Size,
@@ -19,7 +26,15 @@ const WindowManagerContext = createContext<
   WindowManagerContextType | undefined
 >(undefined);
 
-const TASKBAR_HEIGHT = 64;
+const getViewportBounds = (fallbackSize: Size): Size => {
+  if (typeof window === "undefined") {
+    return fallbackSize;
+  }
+  return {
+    width: window.innerWidth,
+    height: window.innerHeight - TASKBAR_HEIGHT,
+  };
+};
 
 const computeMaximizedWindow = (
   windowState: WindowState,
@@ -133,20 +148,20 @@ export const WindowProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       const viewport = computeViewport();
-      const minWidth = appConfig.minSize?.width ?? 200;
-      const minHeight = appConfig.minSize?.height ?? 150;
+      const minWidth = appConfig.minSize?.width ?? WINDOW_MIN_WIDTH;
+      const minHeight = appConfig.minSize?.height ?? WINDOW_MIN_HEIGHT;
 
       const width = isMobile
         ? viewport.width
         : Math.min(
             appConfig.defaultSize.width,
-            Math.max(minWidth, viewport.width - 20)
+            Math.max(minWidth, viewport.width - WINDOW_EDGE_GAP)
           );
       const height = isMobile
         ? viewport.height
         : Math.min(
             appConfig.defaultSize.height,
-            Math.max(minHeight, viewport.height - 20)
+            Math.max(minHeight, viewport.height - WINDOW_EDGE_GAP)
           );
 
       const shouldMaximize = isMobile;
@@ -156,13 +171,13 @@ export const WindowProvider: React.FC<{ children: React.ReactNode }> = ({
         ? 0
         : Math.min(
             Math.random() * 200 + 50,
-            Math.max(0, viewport.width - width - 10)
+            Math.max(0, viewport.width - width - WINDOW_EDGE_GAP / 2)
           );
       const posY = shouldMaximize
         ? 0
         : Math.min(
             Math.random() * 200 + 50,
-            Math.max(0, viewport.height - height - 10)
+            Math.max(0, viewport.height - height - WINDOW_EDGE_GAP / 2)
           );
 
       const newWindow: WindowState = {
@@ -232,42 +247,23 @@ export const WindowProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      const viewportWidth =
-        typeof window !== "undefined" ? window.innerWidth : size.width;
-      const viewportHeight =
-        typeof window !== "undefined"
-          ? window.innerHeight - TASKBAR_HEIGHT
-          : size.height;
-
+      const viewport = getViewportBounds(size);
       setWindows((prev) =>
         prev.map((w) => {
           if (w.id !== id) {
             return w;
           }
-
-          const clampedWidth = Math.min(
-            Math.max(size.width, 200),
-            Math.max(200, viewportWidth - 20)
-          );
-          const clampedHeight = Math.min(
-            Math.max(size.height, 150),
-            Math.max(150, viewportHeight - 20)
-          );
-
-          const minVisibleWidth = Math.min(200, clampedWidth * 0.3);
-          const maxX = Math.max(0, viewportWidth - clampedWidth - 10);
-          const maxY = Math.max(0, viewportHeight - clampedHeight - 10);
-
-          const clampedX = Math.min(
-            Math.max(w.position.x, -clampedWidth + minVisibleWidth),
-            maxX
-          );
-          const clampedY = Math.min(Math.max(w.position.y, 0), maxY);
+          const { size: nextSize, position: nextPosition } =
+            clampWindowPlacement({
+              size,
+              position: w.position,
+              viewport,
+            });
 
           return {
             ...w,
-            size: { width: clampedWidth, height: clampedHeight },
-            position: { x: clampedX, y: clampedY },
+            size: nextSize,
+            position: nextPosition,
           };
         })
       );
@@ -295,29 +291,17 @@ export const WindowProvider: React.FC<{ children: React.ReactNode }> = ({
             };
           }
 
-          const clampedWidth = Math.min(
-            Math.max(w.size.width, 200),
-            Math.max(200, viewport.width - 20)
-          );
-          const clampedHeight = Math.min(
-            Math.max(w.size.height, 150),
-            Math.max(150, viewport.height - 20)
-          );
-
-          const minVisibleWidth = Math.min(200, clampedWidth * 0.3);
-          const maxX = Math.max(0, viewport.width - clampedWidth - 10);
-          const maxY = Math.max(0, viewport.height - clampedHeight - 10);
-
-          const clampedX = Math.min(
-            Math.max(w.position.x, -clampedWidth + minVisibleWidth),
-            maxX
-          );
-          const clampedY = Math.min(Math.max(w.position.y, 0), maxY);
+          const viewportBounds = getViewportBounds(w.size);
+          const { size, position } = clampWindowPlacement({
+            size: w.size,
+            position: w.position,
+            viewport: viewportBounds,
+          });
 
           return {
             ...w,
-            size: { width: clampedWidth, height: clampedHeight },
-            position: { x: clampedX, y: clampedY },
+            size,
+            position,
           };
         })
       );

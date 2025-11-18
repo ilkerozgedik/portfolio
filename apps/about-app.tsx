@@ -24,19 +24,10 @@ const AboutApp: React.FC = () => {
         </div>
       </div>
       <div className="space-y-6">
-        <div className="flex flex-col gap-6 md:flex-row md:items-start">
-          <img
-            alt="My Avatar"
-            className="mx-auto h-24 w-24 flex-shrink-0 rounded-full border-2 border-primary object-cover shadow-lg shadow-primary/20 sm:h-28 sm:w-28 md:mx-0 md:h-32 md:w-32"
-            height={96}
-            src="https://picsum.photos/seed/avatar/150/150"
-            width={96}
-          />
-          <div className="flex-grow">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed md:text-base">
-              {bio}
-            </p>
-          </div>
+        <div className="flex flex-col gap-6">
+          <p className="whitespace-pre-wrap text-sm leading-relaxed md:text-base">
+            {bio}
+          </p>
         </div>
       </div>
     </div>

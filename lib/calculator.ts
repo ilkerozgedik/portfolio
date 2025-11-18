@@ -28,6 +28,8 @@ export const executeOperation = (
   }
 };
 
+const TRAILING_ZERO_REGEX = /\.?0+$/;
+
 export const formatDisplay = (value: number, precision = 8) => {
   if (!Number.isFinite(value)) {
     return "Error";
@@ -37,7 +39,7 @@ export const formatDisplay = (value: number, precision = 8) => {
 
   if (fractional.length > precision) {
     const fixed = value.toFixed(precision);
-    return fixed.replace(/\.?0+$/, "");
+    return fixed.replace(TRAILING_ZERO_REGEX, "");
   }
 
   return valueAsString;

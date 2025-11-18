@@ -31,12 +31,6 @@ const CalculatorApp: React.FC = () => {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const clearError = () => {
-    if (errorMessage) {
-      setErrorMessage(null);
-    }
-  };
-
   const inputDigit = (digit: number) => {
     if (errorMessage) {
       setDisplay(String(digit));
@@ -93,14 +87,14 @@ const CalculatorApp: React.FC = () => {
 
     if (previousValue === null) {
       setPreviousValue(inputValue);
-    } else if (operation) {
+    } else if (operation && previousValue !== null) {
       const { value, error } = executeOperation(
-        previousValue ?? 0,
+        previousValue,
         inputValue,
         operation
       );
-      if (error) {
-        commitError(error);
+      if (error || value === null) {
+        commitError(error ?? "Geçersiz işlem");
         return;
       }
       setDisplay(formatDisplay(value));

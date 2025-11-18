@@ -133,30 +133,41 @@ const ContactApp: React.FC = () => {
               >
                 {item.value}
               </a>
-              <button
-                className="inline-flex items-center gap-2 self-start rounded-full border border-primary/40 px-3 py-1 text-muted-foreground text-xs uppercase tracking-wide transition-colors hover:border-primary hover:text-foreground"
-                onClick={() => {
-                  void copyToClipboard(item.value, item.label);
-                }}
-                type="button"
-              >
-                {feedback?.field === item.label &&
-                feedback.status === "success" ? (
-                  <span className="text-primary text-xs">
-                    {feedback.message}
-                  </span>
-                ) : feedback?.field === item.label &&
-                  feedback.status === "error" ? (
-                  <span className="text-destructive text-xs">
-                    {feedback.message}
-                  </span>
-                ) : (
+              {(() => {
+                const isActiveField = feedback?.field === item.label;
+                let buttonContent: React.ReactNode = (
                   <>
                     <Copy size={14} />
                     Kopyala
                   </>
-                )}
-              </button>
+                );
+
+                if (isActiveField && feedback?.status === "success") {
+                  buttonContent = (
+                    <span className="text-primary text-xs">
+                      {feedback.message}
+                    </span>
+                  );
+                } else if (isActiveField && feedback?.status === "error") {
+                  buttonContent = (
+                    <span className="text-destructive text-xs">
+                      {feedback.message}
+                    </span>
+                  );
+                }
+
+                return (
+                  <button
+                    className="inline-flex items-center gap-2 self-start rounded-full border border-primary/40 px-3 py-1 text-muted-foreground text-xs uppercase tracking-wide transition-colors hover:border-primary hover:text-foreground"
+                    onClick={() => {
+                      copyToClipboard(item.value, item.label);
+                    }}
+                    type="button"
+                  >
+                    {buttonContent}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         ))}
